@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemed - Tu Consulta Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#4c51bf', // Color principal para botones y acentos
+                        'primary-purple': '#5c54a4', // Inspirado en el color de la cita en la imagen
+                        'secondary-gray': '#f5f7fa',
+                        'accent-red': '#ef4444',
+                        'accent-green': '#10b981',
+                        'doctor-teal': '#0f766e', // Nuevo color profesional para el doctor
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos generales para Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Contenedor principal para simular la pantalla de un móvil */
+        #app-container {
+            width: 100%;
+            max-width: 420px; /* Tamaño típico de móvil */
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow-x: hidden; /* Evita desbordamiento horizontal */
+        }
+
+        /* Estilo para la barra de navegación inferior (ambos roles) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 420px;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        .nav-item {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--nav-color, #4c51bf); /* Usará primary-blue o doctor-teal */
+        }
+
+        .screen {
+            padding-bottom: 70px; /* Espacio para la barra de navegación */
+            min-height: 100vh;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Clase de ocultamiento */
+        .hidden-screen {
+            display: none;
+        }
+
+        /* Establecer color de navegación para Doctor */
+        #doctor-bottom-nav {
+            --nav-color: #0f766e;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+
+        <div id="login-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-3xl font-bold mb-8 text-primary-purple text-center">Bienvenido a Telemed</h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-700">Inicio de Sesión</h2>
+                <p class="mb-4 text-sm text-gray-600 italic">Prueba Paciente: `ana@telemed.com`, Clave: `paciente123`</p>
+
+                <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" id="login-email" placeholder="ejemplo@correo.com" value="ana@telemed.com" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                <input type="password" id="login-password" placeholder="••••••••" value="paciente123" class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <button onclick="loginUser()" class="w-full bg-primary-blue text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition duration-150 shadow-md">
+                    Entrar
+                </button>
+            </div>
+
+            <p class="mt-6 text-center text-gray-600">
+                ¿No tienes cuenta? <a href="#" onclick="showScreen('register-screen')" class="text-primary-purple font-semibold hover:underline">Regístrate aquí</a>
+            </p>
+            <p class="mt-4 text-center text-gray-600">
+                <a href="#" onclick="showScreen('doctor-login-screen')" class="text-gray-500 font-medium hover:underline text-sm">Soy Doctor</a>
+            </p>
+            <div id="login-error" class="mt-4 text-center text-accent-red font-medium"></div>
+        </div>
+
+        <div id="register-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-3xl font-bold mb-8 text-primary-purple text-center">Registro de Paciente</h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <label for="reg-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                <input type="text" id="reg-name" placeholder="Tu Nombre" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" id="reg-email" placeholder="ejemplo@correo.com" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña (Mín. 6 caracteres)</label>
+                <input type="password" id="reg-password" placeholder="••••••••" class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <button onclick="registerUser()" class="w-full bg-primary-blue text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition duration-150 shadow-md">
+                    Registrarme
+                </button>
+            </div>
+
+            <p class="mt-6 text-center text-gray-600">
+                ¿Ya tienes cuenta? <a href="#" onclick="showScreen('login-screen')" class="text-primary-purple font-semibold hover:underline">Inicia Sesión</a>
+            </p>
+            <div id="register-error" class="mt-4 text-center text-accent-red font-medium"></div>
+        </div>
+
+        <div id="doctor-login-screen" class="screen p-6 pt-12">
+            <h1 class="text-3xl font-bold mb-8 text-doctor-teal text-center">Acceso Médico</h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <p class="mb-4 text-sm text-gray-600 italic">Acceso de prueba. Doctor: `doc@telemed.com`, Clave: `123456`</p>
+                <label for="doc-login-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <input type="email" id="doc-login-email" value="doc@telemed.com" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-doctor-teal focus:border-doctor-teal">
+
+                <label for="doc-login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                <input type="password" id="doc-login-password" value="123456" class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-doctor-teal focus:border-doctor-teal">
+
+                <button onclick="loginDoctor()" class="w-full bg-doctor-teal text-white py-3 rounded-xl font-bold hover:bg-teal-700 transition duration-150 shadow-md">
+                    Acceder como Médico
+                </button>
+            </div>
+
+            <p class="mt-6 text-center text-gray-600">
+                <a href="#" onclick="showScreen('login-screen')" class="text-gray-500 font-medium hover:underline text-sm">Volver a Acceso Paciente</a>
+            </p>
+            <div id="doc-login-error" class="mt-4 text-center text-accent-red font-medium"></div>
+        </div>
+
+
+        <div id="patient-dashboard-screen" class="hidden-screen screen">
+            <div class="p-6 pb-4 bg-white shadow-sm sticky top-0 z-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Hola, <span id="patient-name-display" class="text-primary-blue">Paciente</span>!</h1>
+                    <div class="p-2 bg-secondary-gray rounded-full text-gray-500 cursor-pointer relative" onclick="showNotifications()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        <span id="notification-count" class="absolute top-0.5 right-0.5 bg-accent-red text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center opacity-0 transition-opacity"></span>
+                    </div>
+                </div>
+
+                <div class="relative mb-4">
+                    <input type="text" placeholder="Buscar Doctor por especialidad..." class="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:ring-primary-blue focus:border-primary-blue bg-secondary-gray" disabled>
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <h2 class="text-xl font-semibold mb-3 text-gray-700">Próximas Citas</h2>
+                <div id="upcoming-appointment-card" class="bg-white p-4 rounded-xl shadow-md border border-gray-100 hidden">
+                    </div>
+                <div id="no-upcoming-appointment" class="p-4 bg-secondary-gray text-gray-600 text-center rounded-xl border border-dashed border-gray-300">
+                    No tienes citas agendadas. ¡Agenda una!
+                </div>
+            </div>
+
+            <div class="p-6 pt-0">
+                <h2 class="text-xl font-semibold mb-3 text-gray-700">Servicios</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="showScreen('schedule-appointment-screen')" class="flex flex-col items-center bg-primary-blue/10 p-4 rounded-xl shadow-sm hover:bg-primary-blue/20 transition">
+                        <svg class="w-8 h-8 text-primary-blue mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <span class="text-sm font-medium text-primary-blue">Agendar Cita</span>
+                    </button>
+                    <button onclick="viewPatientHistory()" class="flex flex-col items-center bg-primary-blue/10 p-4 rounded-xl shadow-sm hover:bg-primary-blue/20 transition">
+                        <svg class="w-8 h-8 text-primary-blue mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-1.5a2.5 2.5 0 00-2.5-2.5H5.75m0 0a2.25 2.25 0 01-.25-.455c-.09-.23-.135-.478-.135-.726V8.25m4.5 4.5h.008v.008h-.008v-.008zm.008-.008a2.25 2.25 0 012.25-2.25H16.25c.582 0 1.066.398 1.187.973l.206 1.018a1.25 1.25 0 00.932 1.066l1.242.348c.19.053.385.08.577.08h.008v.008h-.008v-.008z" /></svg>
+                        <span class="text-sm font-medium text-primary-blue">Historia Clínica</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="schedule-appointment-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                <button onclick="showScreen('patient-dashboard-screen')" class="mr-3 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                Agendar Videoconsulta
+            </h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <label for="app-specialty" class="block text-sm font-medium text-gray-700 mb-1">Especialidad Requerida</label>
+                <select id="app-specialty" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+                    <option value="General">Medicina General</option>
+                    <option value="Cardiology">Cardiología</option>
+                    <option value="Neurology">Neurología</option>
+                    <option value="Psychology">Psicología</option>
+                </select>
+
+                <label for="app-date" class="block text-sm font-medium text-gray-700 mb-1">Fecha Preferida</label>
+                <input type="date" id="app-date" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <label for="app-time" class="block text-sm font-medium text-gray-700 mb-1">Hora Preferida</label>
+                <input type="time" id="app-time" class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue">
+
+                <button onclick="scheduleAppointment()" class="w-full bg-accent-green text-white py-3 rounded-xl font-bold hover:bg-green-700 transition duration-150 shadow-md">
+                    Solicitar Cita
+                </button>
+            </div>
+            <div id="schedule-message" class="mt-4 text-center font-medium"></div>
+        </div>
+
+        <div id="video-consult-screen" class="hidden-screen screen p-0">
+            <div class="relative h-screen flex flex-col justify-between">
+                <div class="flex-grow bg-gray-900 flex flex-col items-center justify-center p-4">
+                    <div class="w-full max-w-sm aspect-video bg-gray-700 rounded-xl shadow-2xl relative mb-4 flex items-center justify-center text-white text-lg font-semibold">
+                        <p>Video del Doctor</p>
+                        <span class="absolute top-2 right-2 bg-accent-red px-2 py-0.5 text-xs rounded-lg">LIVE</span>
+                    </div>
+                    <div class="w-24 h-24 bg-primary-blue border-4 border-white rounded-xl absolute top-16 right-8 flex items-center justify-center text-white text-xs font-semibold">
+                        Tú
+                    </div>
+                    <p class="text-white mt-8 text-xl font-medium">Conectado con <span id="partner-name">...</span></p>
+                    <p class="text-gray-400 text-sm" id="call-timer">00:00</p>
+                </div>
+
+                <div class="bg-gray-800 p-4 flex justify-center space-x-6">
+                    <button class="bg-white p-3 rounded-full text-gray-700 hover:bg-gray-200 transition" title="Silenciar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7v-2a5 5 0 005-5h2zM12 2a5 5 0 00-5 5v2a5 5 0 005 5v-2a3 3 0 01-3-3V7a3 3 0 013-3v0zM17 19h2a2 2 0 002-2v-4M5 19H3a2 2 0 01-2-2v-4M10 9a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                    </button>
+                    <button class="bg-white p-3 rounded-full text-gray-700 hover:bg-gray-200 transition" title="Apagar Video">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55 2.275a1 1 0 010 1.9L15 15.725v2.275a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h8a2 2 0 012 2v2z" /></svg>
+                    </button>
+                    <button onclick="endVideoConsult()" class="bg-accent-red p-3 rounded-full text-white hover:bg-red-700 transition" title="Finalizar llamada">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="history-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                <button onclick="showScreen('patient-dashboard-screen')" class="mr-3 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                Mi Historia Clínica
+            </h1>
+
+            <div id="medical-records-list">
+                <p class="text-center text-gray-500 italic mt-8">Aún no hay registros de consultas.</p>
+            </div>
+        </div>
+
+
+        <div id="doctor-appointments-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-6 text-doctor-teal">
+                Citas Programadas
+            </h1>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-accent-green/10 p-4 rounded-xl shadow-sm border border-accent-green">
+                    <p class="text-xs text-gray-600">Pendientes</p>
+                    <p id="pending-count" class="text-3xl font-bold text-accent-green">0</p>
+                </div>
+                <div class="bg-primary-blue/10 p-4 rounded-xl shadow-sm border border-primary-blue">
+                    <p class="text-xs text-gray-600">Confirmadas</p>
+                    <p id="confirmed-count" class="text-3xl font-bold text-primary-blue">0</p>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-doctor-teal" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd" /></svg>
+                Solicitudes Pendientes
+            </h2>
+            <div id="pending-appointments-list">
+                </div>
+
+            <h2 class="text-xl font-semibold mt-6 mb-3 text-gray-700 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-doctor-teal" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" /></svg>
+                Próximas Confirmadas
+            </h2>
+            <div id="confirmed-appointments-list">
+                </div>
+        </div>
+
+        <div id="doctor-patient-history-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-6 text-doctor-teal">
+                Historial de Pacientes
+            </h1>
+            
+            <div class="relative mb-4">
+                <input type="text" id="patient-search-input" oninput="searchPatientRecords()" placeholder="Buscar paciente por nombre o ID (Ej: Ana Torres)" class="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:ring-doctor-teal focus:border-doctor-teal bg-secondary-gray">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+
+            <div id="doctor-records-list">
+                <p class="text-center text-gray-500 italic mt-8">Ingresa el nombre del paciente para ver sus registros.</p>
+            </div>
+        </div>
+
+        <div id="doctor-profile-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-8 text-doctor-teal">
+                Mi Perfil
+            </h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-8 flex items-center space-x-4">
+                <div class="w-16 h-16 bg-doctor-teal/20 text-doctor-teal rounded-full flex items-center justify-center text-2xl font-bold">
+                    Dr.
+                </div>
+                <div>
+                    <p class="text-xl font-bold" id="doctor-name-display">Dr. Prueba</p>
+                    <p class="text-gray-600" id="doctor-email-display">doc@telemed.com</p>
+                    <p class="text-sm text-doctor-teal font-medium mt-1">Especialidad: Medicina General</p>
+                </div>
+            </div>
+
+            <button onclick="logoutDoctor()" class="w-full bg-accent-red text-white py-3 rounded-xl font-bold hover:bg-red-700 transition duration-150 shadow-md">
+                Cerrar Sesión
+            </button>
+        </div>
+
+
+        <div id="medical-note-screen" class="hidden-screen screen p-6 pt-12">
+            <h1 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                <button onclick="showScreen('doctor-appointments-screen')" class="mr-3 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                Nota Médica para <span id="note-patient-name" class="text-primary-blue ml-1"></span>
+            </h1>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <label for="note-diagnosis" class="block text-sm font-medium text-gray-700 mb-1">Diagnóstico (Simplificado)</label>
+                <textarea id="note-diagnosis" rows="2" placeholder="Ej: Resfriado común, manejo sintomático." class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-doctor-teal focus:border-doctor-teal"></textarea>
+
+                <label for="note-recipe" class="block text-sm font-medium text-gray-700 mb-1">Receta / Indicaciones</label>
+                <textarea id="note-recipe" rows="4" placeholder="Ej: Acetaminofén 500mg cada 8 horas por 3 días. Reposo. Beber muchos líquidos." class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-doctor-teal focus:border-doctor-teal"></textarea>
+
+                <button onclick="saveMedicalNote()" class="w-full bg-doctor-teal text-white py-3 rounded-xl font-bold hover:bg-teal-700 transition duration-150 shadow-md">
+                    Guardar y Finalizar Consulta
+                </button>
+            </div>
+            <div id="note-message" class="mt-4 text-center font-medium"></div>
+        </div>
+
+        <div id="notifications-screen" class="hidden-screen screen">
+             <div class="p-6 pt-12">
+                <h1 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                    <button onclick="showScreen('patient-dashboard-screen')" class="mr-3 text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    Notificaciones
+                </h1>
+
+                <div id="notifications-list" class="mb-8">
+                    <p class="text-center text-gray-500 italic mt-8">No hay notificaciones recientes.</p>
+                </div>
+
+                <button onclick="clearNotifications()" class="mt-4 w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition duration-150 shadow-sm">
+                    Limpiar Notificaciones
+                </button>
+            </div>
+        </div>
+
+        <div id="patient-bottom-nav" class="bottom-nav flex justify-around items-center h-14 border-t hidden">
+            <div class="nav-item flex flex-col items-center p-1 active" onclick="showScreen('patient-dashboard-screen')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg>
+                <span class="text-xs">Inicio</span>
+            </div>
+            <div class="nav-item flex flex-col items-center p-1" onclick="showScreen('schedule-appointment-screen')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="text-xs">Agendar</span>
+            </div>
+            <div class="nav-item flex flex-col items-center p-1" onclick="viewPatientHistory()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-1.5a2.5 2.5 0 00-2.5-2.5H5.75m0 0a2.25 2.25 0 01-.25-.455c-.09-.23-.135-.478-.135-.726V8.25m4.5 4.5h.008v.008h-.008v-.008zm.008-.008a2.25 2.25 0 012.25-2.25H16.25c.582 0 1.066.398 1.187.973l.206 1.018a1.25 1.25 0 00.932 1.066l1.242.348c.19.053.385.08.577.08h.008v.008h-.008v-.008z" /></svg>
+                <span class="text-xs">Historia</span>
+            </div>
+            <div class="nav-item flex flex-col items-center p-1" onclick="logoutUser()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                <span class="text-xs">Salir</span>
+            </div>
+        </div>
+
+        <div id="doctor-bottom-nav" class="bottom-nav flex justify-around items-center h-14 border-t hidden">
+            <div class="nav-item flex flex-col items-center p-1 active" onclick="showScreen('doctor-appointments-screen', true)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4C2.895 4 2 4.895 2 6V18C2 19.105 2.895 20 4 20H20C21.105 20 22 19.105 22 18V6C22 4.895 21.105 4 20 4H4ZM12 12C14.209 12 16 10.209 16 8C16 5.791 14.209 4 12 4C9.791 4 8 5.791 8 8C8 10.209 9.791 12 12 12ZM4 18V16C4 14.343 6.686 13 12 13C17.314 13 20 14.343 20 16V18H4Z" /></svg>
+                <span class="text-xs">Citas</span>
+            </div>
+            <div class="nav-item flex flex-col items-center p-1" onclick="showScreen('doctor-patient-history-screen', true)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4C2.895 2 2 2.895 2 4V20C2 21.105 2.895 22 4 22H20C21.105 22 22 21.105 22 20V4C22 2.895 21.105 2 20 2ZM18 10H6V8H18V10ZM18 14H6V12H18V14ZM10 18H6V16H10V18Z" /></svg>
+                <span class="text-xs">Historial</span>
+            </div>
+            <div class="nav-item flex flex-col items-center p-1" onclick="showScreen('doctor-profile-screen', true)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 6v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2h18z" /></svg>
+                <span class="text-xs">Perfil</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Variables Globales y Estado de la Aplicación ---
+        let currentUser = null; // Almacena el usuario logeado (paciente o doctor)
+        let isDoctor = false;
+        let activeAppointmentId = null; // Cita activa para el doctor
+        let callTimerInterval = null;
+
+        const SC_USERS = 'telemed_users';
+        const SC_APPOINTMENTS = 'telemed_appointments';
+        const SC_RECORDS = 'telemed_records';
+        const SC_NOTIFICATIONS = 'telemed_notifications';
+        
+        // --- CREDENCIALES DE PRUEBA ACTUALIZADAS ---
+        const DOCTOR_CREDENTIALS = { id: 'doc-1', email: 'doc@telemed.com', password: '123456', name: 'Dr. Prueba', specialty: 'Medicina General', isDoctor: true };
+        // Paciente de prueba actualizado de "Paciente Prueba" a "Ana Torres"
+        const PATIENT_TEST_CREDENTIALS = { id: 'pat-test-1', name: 'Ana Torres', email: 'ana@telemed.com', password: 'paciente123', isDoctor: false };
+
+
+        // --- 2. Funciones de Almacenamiento (localStorage) ---
+
+        /** Carga los datos de localStorage o devuelve un array vacío. */
+        const loadData = (key) => {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : [];
+        };
+
+        /** Guarda los datos en localStorage. */
+        const saveData = (key, data) => {
+            localStorage.setItem(key, JSON.stringify(data));
+        };
+
+        /** Genera un ID simple y único. */
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+
+
+        // Inicializa el doctor de prueba y el paciente de prueba si no existen
+        const initializeUsers = () => {
+            const users = loadData(SC_USERS);
+            let updated = false;
+
+            // Inicializar Doctor
+            if (!users.some(user => user.email === DOCTOR_CREDENTIALS.email)) {
+                users.push(DOCTOR_CREDENTIALS);
+                updated = true;
+            }
+
+            // Inicializar Paciente de Prueba (Ana Torres)
+            if (!users.some(user => user.email === PATIENT_TEST_CREDENTIALS.email)) {
+                users.push(PATIENT_TEST_CREDENTIALS);
+                updated = true;
+            } else {
+                // Asegurar que el nombre de Ana Torres esté actualizado si se usó el nombre anterior
+                const anaIndex = users.findIndex(u => u.id === PATIENT_TEST_CREDENTIALS.id);
+                if (anaIndex !== -1 && users[anaIndex].name !== PATIENT_TEST_CREDENTIALS.name) {
+                    users[anaIndex].name = PATIENT_TEST_CREDENTIALS.name;
+                    updated = true;
+                }
+            }
+
+            if (updated) {
+                saveData(SC_USERS, users);
+            }
+        };
+
+        /** Inicializa datos de citas, historial y notificaciones para pruebas. */
+        const initializeMockData = () => {
+            const appointments = loadData(SC_APPOINTMENTS);
+            const records = loadData(SC_RECORDS);
+            const notifications = loadData(SC_NOTIFICATIONS);
+
+            // Verifica si los datos mock ya existen para evitar duplicados.
+            // Usamos un ID de control para la cita de Ana.
+            if (appointments.some(app => app.id === 'mock-app-confirmed-ana')) {
+                return; 
+            }
+
+            const anaId = PATIENT_TEST_CREDENTIALS.id;
+            const anaName = PATIENT_TEST_CREDENTIALS.name;
+            const doctorId = DOCTOR_CREDENTIALS.id;
+            const doctorName = DOCTOR_CREDENTIALS.name;
+
+            // Fecha y hora para la cita Confirmada (un poco en el futuro)
+            const futureTime = new Date(Date.now() + 5 * 60 * 1000);
+            const futureDateStr = futureTime.toISOString().split('T')[0];
+            const futureTimeStr = futureTime.toTimeString().split(' ')[0].substring(0, 5);
+
+            // --- Citas Mock REALISTAS ---
+            const mockAppointments = [
+                // Cita Confirmada para Ana Torres
+                { id: 'mock-app-confirmed-ana', patientId: anaId, patientName: anaName, specialty: 'Medicina General', date: futureDateStr, time: futureTimeStr, status: 'Confirmada', doctorId, doctorName },
+                
+                // Solicitudes Pendientes con nombres realistas
+                { id: 'mock-app-pending-juan', patientId: 'pat-' + generateId(), patientName: 'Juan Pérez', specialty: 'Psicología', date: '2025-11-17', time: '11:29', status: 'Pendiente', doctorId, doctorName },
+                { id: 'mock-app-pending-maria', patientId: 'pat-' + generateId(), patientName: 'María Gómez', specialty: 'Medicina General', date: '2025-11-18', time: '01:37', status: 'Pendiente', doctorId, doctorName },
+                { id: 'mock-app-pending-carlos', patientId: 'pat-' + generateId(), patientName: 'Carlos Vega', specialty: 'Medicina General', date: '2025-11-19', time: '11:41', status: 'Pendiente', doctorId, doctorName },
+                
+                // Cita Finalizada para Ana Torres
+                { id: 'mock-app-finalized-ana', patientId: anaId, patientName: anaName, specialty: 'Cardiología', date: '2025-10-15', time: '14:30', status: 'Finalizada', doctorId, doctorName }
+            ];
+            
+            // Combina los appointments existentes con los de prueba, filtrando duplicados del mock original.
+            const existingAppointmentIds = new Set(appointments.map(a => a.id));
+            const newAppointments = mockAppointments.filter(a => !existingAppointmentIds.has(a.id) && a.id !== 'mock-app-confirmed' && a.id !== 'mock-app-pending' && a.id !== 'mock-app-finalized');
+            
+            // Eliminar los mocks antiguos si existen
+            const cleanedAppointments = appointments.filter(a => a.id !== 'mock-app-confirmed' && a.id !== 'mock-app-pending' && a.id !== 'mock-app-finalized');
+            
+            saveData(SC_APPOINTMENTS, [...cleanedAppointments, ...newAppointments]);
+
+            // --- Registros Médicos (Solo si no hay) ---
+            if (records.length === 0) {
+                const mockRecords = [
+                    // Historial para Ana Torres
+                    { id: 'mock-rec-1', patientId: anaId, patientName: anaName, date: '2025-10-15', doctorName, specialty: 'Cardiología', diagnosis: 'Hipertensión leve, control de dieta.', recipe: 'Tomar pastilla A 1 vez al día. Reducir sodio y hacer ejercicio diario.\n\nPróximo control en 3 meses.' }
+                ];
+                saveData(SC_RECORDS, mockRecords);
+            }
+
+            // --- Notificaciones ---
+            if (notifications.length === 0 || !notifications.some(n => n.userId === anaId)) {
+                const userNotifs = {
+                    userId: anaId,
+                    list: [
+                        { id: 'notif-1', message: `¡Tu cita con el Dr. Prueba ha sido CONFIRMADA para las ${futureTimeStr}!`, timestamp: new Date().toLocaleString('es-ES'), read: false },
+                        { id: 'notif-2', message: 'Tu solicitud de cita ha sido recibida con éxito.', timestamp: new Date(Date.now() - 3600000).toLocaleString('es-ES'), read: true }
+                    ]
+                };
+                saveData(SC_NOTIFICATIONS, [userNotifs]);
+            }
+        };
+
+        // --- 3. Funciones de Navegación y UI ---
+
+        /** Muestra una pantalla, oculta las demás y gestiona las barras de navegación. */
+        const showScreen = (screenId) => {
+            window.scrollTo(0, 0); // Mejora de fluidez: ir al tope de la pantalla
+            
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden-screen');
+            });
+            
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden-screen');
+            }
+
+            const patientNav = document.getElementById('patient-bottom-nav');
+            const doctorNav = document.getElementById('doctor-bottom-nav');
+            
+            const isNavHiddenScreen = screenId.includes('login') || screenId.includes('register') || screenId.includes('video-consult');
+
+            patientNav.classList.toggle('hidden', !currentUser || isDoctor || isNavHiddenScreen);
+            doctorNav.classList.toggle('hidden', !currentUser || !isDoctor || isNavHiddenScreen);
+
+            if (currentUser) {
+                if (isDoctor) {
+                    updateDoctorNavActive(screenId);
+                } else {
+                    updatePatientNavActive(screenId);
+                }
+            }
+
+            // Actualizar contenido dinámico de la pantalla
+            switch (screenId) {
+                case 'patient-dashboard-screen':
+                    updatePatientDashboard();
+                    updateNotificationCount();
+                    break;
+                case 'doctor-appointments-screen':
+                    updateDoctorAppointmentsScreen();
+                    break;
+                case 'doctor-profile-screen':
+                    if (currentUser) {
+                        document.getElementById('doctor-name-display').textContent = currentUser.name;
+                        document.getElementById('doctor-email-display').textContent = currentUser.email;
+                    }
+                    break;
+                case 'notifications-screen':
+                    // Cambiar la función de "volver" a showPatientDashboard
+                    document.querySelector('#notifications-screen button[onclick="clearNotifications()"]').onclick = clearNotifications;
+                    document.querySelector('#notifications-screen h1 button').onclick = () => showScreen('patient-dashboard-screen');
+                    break;
+                case 'schedule-appointment-screen':
+                     // Establecer la fecha mínima en el selector de fecha
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('app-date').setAttribute('min', today);
+                    break;
+            }
+        };
+
+        /** Actualiza el ícono activo en la barra de navegación del paciente. */
+        const updatePatientNavActive = (currentScreenId) => {
+            document.querySelectorAll('#patient-bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
+            let index = -1;
+            if (currentScreenId === 'patient-dashboard-screen') index = 0;
+            else if (currentScreenId === 'schedule-appointment-screen') index = 1;
+            else if (currentScreenId === 'history-screen') index = 2;
+            
+            if (index !== -1) {
+                document.querySelector(`#patient-bottom-nav .nav-item:nth-child(${index + 1})`).classList.add('active');
+            }
+        };
+
+        /** Actualiza el ícono activo en la barra de navegación del doctor. */
+        const updateDoctorNavActive = (currentScreenId) => {
+            document.querySelectorAll('#doctor-bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
+            let index = -1;
+            if (currentScreenId === 'doctor-appointments-screen') index = 0;
+            else if (currentScreenId === 'doctor-patient-history-screen') index = 1;
+            else if (currentScreenId === 'doctor-profile-screen') index = 2;
+            
+            if (index !== -1) {
+                document.querySelector(`#doctor-bottom-nav .nav-item:nth-child(${index + 1})`).classList.add('active');
+            }
+        };
+
+        /** Muestra la pantalla del paciente después de iniciar sesión. */
+        const showPatientDashboard = () => {
+            isDoctor = false;
+            if (currentUser) {
+                document.getElementById('patient-name-display').textContent = currentUser.name.split(' ')[0]; // Solo el primer nombre
+                showScreen('patient-dashboard-screen');
+            } else {
+                showScreen('login-screen');
+            }
+        };
+
+        /** Muestra la pantalla principal del doctor después de iniciar sesión. */
+        const showDoctorDashboard = () => {
+            isDoctor = true;
+            if (currentUser) {
+                showScreen('doctor-appointments-screen');
+            } else {
+                showScreen('doctor-login-screen');
+            }
+        };
+
+        // --- 4. Funciones de Autenticación (Login/Registro) ---
+
+        const registerUser = () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+            const errorElement = document.getElementById('register-error');
+            errorElement.textContent = '';
+
+            if (!name || !email || password.length < 6) {
+                errorElement.textContent = 'Por favor, completa todos los campos. La contraseña debe tener al menos 6 caracteres.';
+                return;
+            }
+
+            const users = loadData(SC_USERS);
+            if (users.some(u => u.email === email)) {
+                errorElement.textContent = 'El correo electrónico ya está registrado.';
+                return;
+            }
+
+            const newUser = {
+                id: 'pat-' + generateId(),
+                name,
+                email,
+                password,
+                isDoctor: false
+            };
+
+            users.push(newUser);
+            saveData(SC_USERS, users);
+            
+            // Iniciar sesión automáticamente después del registro
+            currentUser = newUser;
+            showPatientDashboard();
+        };
+
+        const loginUser = () => {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const errorElement = document.getElementById('login-error');
+            errorElement.textContent = '';
+
+            const users = loadData(SC_USERS);
+            const user = users.find(u => u.email === email && u.password === password && !u.isDoctor);
+
+            if (user) {
+                currentUser = user;
+                showPatientDashboard();
+            } else {
+                errorElement.textContent = 'Credenciales de paciente incorrectas.';
+            }
+        };
+
+        const loginDoctor = () => {
+            const email = document.getElementById('doc-login-email').value.trim();
+            const password = document.getElementById('doc-login-password').value.trim();
+            const errorElement = document.getElementById('doc-login-error');
+            errorElement.textContent = '';
+
+            const users = loadData(SC_USERS);
+            const user = users.find(u => u.email === email && u.password === password && u.isDoctor);
+
+            if (user) {
+                currentUser = user; 
+                showDoctorDashboard();
+            } else {
+                errorElement.textContent = 'Credenciales de doctor incorrectas.';
+            }
+        };
+
+        const logoutUser = () => {
+            currentUser = null;
+            isDoctor = false;
+            showScreen('login-screen');
+        };
+
+        const logoutDoctor = () => {
+            currentUser = null;
+            isDoctor = false;
+            showScreen('doctor-login-screen'); 
+        };
+
+        // --- 5. Lógica de Citas y Dashboard de Paciente ---
+
+        const scheduleAppointment = () => {
+            // Guard clause to ensure user is logged in as a patient
+            if (!currentUser || isDoctor) {
+                alert("Error: Debes iniciar sesión como paciente para agendar una cita.");
+                showScreen('login-screen');
+                return;
+            }
+
+            const specialty = document.getElementById('app-specialty').value;
+            const date = document.getElementById('app-date').value;
+            const time = document.getElementById('app-time').value;
+            const messageElement = document.getElementById('schedule-message');
+            const button = document.querySelector('#schedule-appointment-screen button[onclick="scheduleAppointment()"]');
+            messageElement.textContent = '';
+
+            if (!date || !time) {
+                messageElement.textContent = 'Por favor, selecciona fecha y hora.';
+                messageElement.className = 'mt-4 text-center font-medium text-accent-red';
+                return;
+            }
+
+             const selectedDate = new Date(date + 'T' + time);
+             if (selectedDate < new Date()) {
+                messageElement.textContent = 'La fecha y hora deben ser en el futuro.';
+                messageElement.className = 'mt-4 text-center font-medium text-accent-red';
+                return;
+            }
+
+            // Disable button to prevent multiple clicks
+            button.disabled = true;
+            button.textContent = 'Procesando...';
+            button.classList.add('opacity-50');
+
+            const appointments = loadData(SC_APPOINTMENTS);
+            const newAppointment = {
+                id: 'app-' + generateId(),
+                patientId: currentUser.id,
+                patientName: currentUser.name,
+                specialty,
+                date,
+                time,
+                status: 'Pendiente',
+                doctorId: DOCTOR_CREDENTIALS.id, // Assigned to the test doctor by default
+                doctorName: DOCTOR_CREDENTIALS.name
+            };
+
+            appointments.push(newAppointment);
+            saveData(SC_APPOINTMENTS, appointments);
+
+            addNotification(currentUser.id, `Tu solicitud de cita para ${specialty} el ${date} a las ${time} ha sido enviada.`);
+            
+            messageElement.textContent = '¡Tu solicitud de cita ha sido enviada con éxito!';
+            messageElement.className = 'mt-4 text-center font-medium text-accent-green';
+
+            // Resetear campos después de un envío exitoso
+            document.getElementById('app-date').value = '';
+            document.getElementById('app-time').value = '';
+
+            setTimeout(() => {
+                showScreen('patient-dashboard-screen');
+                messageElement.textContent = '';
+                // Re-enable button for future use
+                button.disabled = false;
+                button.textContent = 'Solicitar Cita';
+                button.classList.remove('opacity-50');
+            }, 2000);
+        };
+
+        const updatePatientDashboard = () => {
+             if (!currentUser || isDoctor) return;
+
+            const appointments = loadData(SC_APPOINTMENTS);
+            const patientAppointments = appointments
+                .filter(app => app.patientId === currentUser.id && app.status === 'Confirmada')
+                .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time));
+
+            const nextAppointment = patientAppointments.find(app => {
+                const appTime = new Date(app.date + 'T' + app.time).getTime();
+                // Considerar la cita como próxima si es en el futuro o hasta 15 minutos en el pasado (para dar tiempo a conectar)
+                return appTime >= (Date.now() - 15 * 60 * 1000);
+            });
+            
+            const cardElement = document.getElementById('upcoming-appointment-card');
+            const noAppElement = document.getElementById('no-upcoming-appointment');
+
+            if (nextAppointment) {
+                const [year, month, day] = nextAppointment.date.split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day); 
+                const formattedDate = dateObj.toLocaleDateString('es-ES', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long' 
+                });
+
+                cardElement.innerHTML = `
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="p-3 bg-primary-purple rounded-full text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-semibold text-gray-800">Videoconsulta con ${nextAppointment.doctorName}</p>
+                            <p class="text-sm text-gray-500">${nextAppointment.specialty}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center bg-primary-purple/10 p-3 rounded-xl text-primary-purple">
+                        <p class="text-sm font-medium">📅 ${formattedDate}</p>
+                        <p class="text-sm font-medium">🕒 ${nextAppointment.time}</p>
+                        <button onclick="startVideoConsult('${nextAppointment.id}')" class="bg-primary-purple text-white text-sm font-bold px-3 py-1 rounded-lg shadow-md hover:bg-primary-purple/80 transition">
+                            Conectar
+                        </button>
+                    </div>
+                `;
+                cardElement.classList.remove('hidden');
+                noAppElement.classList.add('hidden');
+            } else {
+                cardElement.classList.add('hidden');
+                noAppElement.classList.remove('hidden');
+            }
+        };
+
+        // --- 6. Lógica de Videoconsulta (Simulación) ---
+
+        /** Inicia la simulación de videoconsulta. */
+        const startVideoConsult = (appointmentId) => {
+            activeAppointmentId = appointmentId;
+            const appointment = loadData(SC_APPOINTMENTS).find(app => app.id === appointmentId);
+            if (!appointment) return;
+
+            const partnerName = isDoctor ? appointment.patientName : appointment.doctorName;
+            
+            document.getElementById('partner-name').textContent = partnerName;
+            showScreen('video-consult-screen');
+
+            // Iniciar temporizador
+            let seconds = 0;
+            const timerElement = document.getElementById('call-timer');
+            timerElement.textContent = '00:00';
+
+            clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                seconds++;
+                const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const sec = String(seconds % 60).padStart(2, '0');
+                timerElement.textContent = `${min}:${sec}`;
+            }, 1000);
+        };
+
+        /** Finaliza la simulación de videoconsulta. */
+        const endVideoConsult = () => {
+            clearInterval(callTimerInterval);
+            callTimerInterval = null;
+
+            if (isDoctor) {
+                const appointment = loadData(SC_APPOINTMENTS).find(app => app.id === activeAppointmentId);
+                
+                if (appointment) {
+                    // Prepara la pantalla de nota médica
+                    document.getElementById('note-patient-name').textContent = appointment.patientName;
+                    document.getElementById('note-diagnosis').value = '';
+                    document.getElementById('note-recipe').value = '';
+                    document.getElementById('note-message').textContent = '';
+                    showScreen('medical-note-screen');
+                } else {
+                    showDoctorDashboard();
+                }
+            } else {
+                addNotification(currentUser.id, `La videoconsulta ha finalizado. Espera la nota médica en tu Historia Clínica.`);
+                showPatientDashboard();
+            }
+        };
+
+        // --- 7. Lógica de Dashboard de Doctor ---
+
+        /** Actualiza la pantalla de citas del doctor con solicitudes y confirmadas. */
+        const updateDoctorAppointmentsScreen = () => {
+            if (!currentUser || !isDoctor) return;
+
+            const appointments = loadData(SC_APPOINTMENTS);
+            const doctorAppointments = appointments.filter(app => app.doctorId === currentUser.id);
+
+            const pending = doctorAppointments.filter(app => app.status === 'Pendiente');
+            const confirmed = doctorAppointments
+                .filter(app => app.status === 'Confirmada' && new Date(app.date + 'T' + app.time) > new Date() - 15 * 60 * 1000)
+                .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time));
+
+            document.getElementById('pending-count').textContent = pending.length;
+            document.getElementById('confirmed-count').textContent = confirmed.length;
+
+            // Renderizar Pendientes
+            const pendingList = document.getElementById('pending-appointments-list');
+            pendingList.innerHTML = pending.length === 0 ? '<p class="text-gray-500 italic">No hay solicitudes pendientes.</p>' : '';
+            pending.forEach(app => {
+                const card = document.createElement('div');
+                card.className = 'bg-yellow-50 p-4 rounded-xl shadow-md border border-yellow-300/50 mb-3';
+                card.innerHTML = `
+                    <p class="font-bold text-gray-800">${app.patientName} <span class="text-sm font-normal text-gray-500">(${app.specialty})</span></p>
+                    <p class="text-sm text-gray-600 mb-3">Solicitud para: 📅 ${app.date} | 🕒 ${app.time}</p>
+                    <div class="flex justify-end space-x-2">
+                        <button onclick="changeAppointmentStatus('${app.id}', 'Confirmada')" class="bg-accent-green text-white text-xs px-3 py-1 rounded-full font-semibold hover:bg-green-700 transition shadow-md">
+                            Aprobar
+                        </button>
+                        <button onclick="changeAppointmentStatus('${app.id}', 'Rechazada')" class="bg-accent-red text-white text-xs px-3 py-1 rounded-full font-semibold hover:bg-red-700 transition shadow-md">
+                            Rechazar
+                        </button>
+                    </div>
+                `;
+                pendingList.appendChild(card);
+            });
+
+            // Renderizar Confirmadas
+            const confirmedList = document.getElementById('confirmed-appointments-list');
+            confirmedList.innerHTML = confirmed.length === 0 ? '<p class="text-gray-500 italic">No hay citas confirmadas próximas.</p>' : '';
+
+            confirmed.forEach(app => {
+                const card = document.createElement('div');
+                card.className = 'bg-doctor-teal/5 p-4 rounded-xl shadow-md border border-doctor-teal/50 mb-3';
+                card.innerHTML = `
+                    <p class="font-bold text-gray-800">${app.patientName} <span class="text-xs font-normal text-gray-500">(${app.specialty})</span></p>
+                    <p class="text-sm text-doctor-teal mb-3">Próxima: 📅 ${app.date} a las 🕒 ${app.time}</p>
+                    <div class="flex justify-end">
+                        <button onclick="startVideoConsult('${app.id}')" class="bg-doctor-teal text-white text-sm px-4 py-1.5 rounded-xl font-bold hover:bg-teal-700 transition shadow-md flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55 2.275a1 1 0 010 1.9L15 15.725v2.275a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h8a2 2 0 012 2v2z" /></svg>
+                            Iniciar Consulta
+                        </button>
+                    </div>
+                `;
+                confirmedList.appendChild(card);
+            });
+        };
+
+        /** Cambia el estado de una cita y notifica al paciente. */
+        const changeAppointmentStatus = (id, newStatus) => {
+            const appointments = loadData(SC_APPOINTMENTS);
+            const appointment = appointments.find(app => app.id === id);
+
+            if (appointment) {
+                appointment.status = newStatus;
+                saveData(SC_APPOINTMENTS, appointments);
+
+                let message;
+                if (newStatus === 'Confirmada') {
+                    message = `¡Tu cita para el ${appointment.date} a las ${appointment.time} ha sido CONFIRMADA!`;
+                } else if (newStatus === 'Rechazada') {
+                    message = `Tu solicitud de cita para el ${appointment.date} ha sido RECHAZADA.`;
+                }
+                addNotification(appointment.patientId, message);
+                updateDoctorAppointmentsScreen();
+            }
+        };
+
+        /** Guarda la nota médica y la historia clínica (Finaliza el flujo). */
+        const saveMedicalNote = () => {
+            if (!currentUser || !isDoctor || !activeAppointmentId) return;
+
+            const diagnosis = document.getElementById('note-diagnosis').value.trim();
+            const recipe = document.getElementById('note-recipe').value.trim();
+            const messageElement = document.getElementById('note-message');
+
+            if (!diagnosis || !recipe) {
+                messageElement.textContent = 'Por favor, completa el diagnóstico y las indicaciones.';
+                messageElement.className = 'mt-4 text-center font-medium text-accent-red';
+                return;
+            }
+
+            const appointments = loadData(SC_APPOINTMENTS);
+            const appointmentIndex = appointments.findIndex(app => app.id === activeAppointmentId);
+            if (appointmentIndex === -1) return;
+
+            const appointment = appointments[appointmentIndex];
+            appointment.status = 'Finalizada';
+            saveData(SC_APPOINTMENTS, appointments);
+
+            const records = loadData(SC_RECORDS);
+            const newRecord = {
+                id: 'rec-' + generateId(),
+                patientId: appointment.patientId,
+                patientName: appointment.patientName,
+                date: new Date().toISOString().split('T')[0],
+                doctorName: appointment.doctorName,
+                specialty: appointment.specialty,
+                diagnosis,
+                recipe
+            };
+            records.push(newRecord);
+            saveData(SC_RECORDS, records);
+
+            addNotification(appointment.patientId, `¡Tu Historia Clínica ha sido actualizada por el Dr. ${appointment.doctorName}!`);
+
+            messageElement.textContent = 'Nota médica guardada y cita finalizada.';
+            messageElement.className = 'mt-4 text-center font-medium text-accent-green';
+            activeAppointmentId = null;
+
+            setTimeout(() => {
+                showDoctorDashboard();
+            }, 1500);
+        };
+
+        // --- 8. Lógica de Historia Clínica (Pacientes y Doctor) ---
+
+        /** Muestra la historia clínica del paciente logeado (usada por el paciente). */
+        const viewPatientHistory = () => {
+            if (!currentUser || isDoctor) return;
+            const patientRecords = loadData(SC_RECORDS).filter(rec => rec.patientId === currentUser.id);
+            renderMedicalRecords(patientRecords);
+            showScreen('history-screen');
+        };
+        
+        /** Renderiza la lista de registros médicos en la vista de historial de doctor/paciente. */
+        const renderMedicalRecords = (records, listElementId = 'medical-records-list') => {
+            const listElement = document.getElementById(listElementId);
+            listElement.innerHTML = '';
+            
+            if (records.length === 0) {
+                listElement.innerHTML = '<p class="text-center text-gray-500 italic mt-8">No hay registros de consultas disponibles.</p>';
+                return;
+            }
+
+            records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            records.forEach(record => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-xl shadow-lg border border-gray-100 mb-4';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-bold ${isDoctor ? 'text-doctor-teal' : 'text-primary-blue'}">${record.specialty} - ${record.date}</h3>
+                        <p class="text-xs font-medium text-gray-500">Dr. ${record.doctorName}</p>
+                    </div>
+                    ${isDoctor ? `<p class="text-sm font-semibold mt-3 text-gray-700">Paciente:</p>
+                    <p class="text-sm text-gray-600 mb-3 font-medium">${record.patientName || 'N/A'}</p>` : ''}
+                    <p class="text-sm font-semibold text-gray-700">Diagnóstico:</p>
+                    <p class="text-sm text-gray-600 mb-3">${record.diagnosis}</p>
+                    <p class="text-sm font-semibold text-gray-700">Receta / Indicaciones:</p>
+                    <p class="text-sm text-gray-600 whitespace-pre-wrap">${record.recipe}</p>
+                `;
+                listElement.appendChild(card);
+            });
+        }
+        
+        /** Busca y muestra el historial de pacientes (usada por el doctor). */
+        const searchPatientRecords = () => {
+            const searchTerm = document.getElementById('patient-search-input').value.trim().toLowerCase();
+            const records = loadData(SC_RECORDS);
+            
+            if (searchTerm.length < 2) {
+                document.getElementById('doctor-records-list').innerHTML = '<p class="text-center text-gray-500 italic mt-8">Ingresa al menos 2 caracteres para buscar.</p>';
+                return;
+            }
+
+            const filteredRecords = records.filter(rec => 
+                (rec.patientName && rec.patientName.toLowerCase().includes(searchTerm)) ||
+                rec.patientId.toLowerCase().includes(searchTerm)
+            );
+
+            renderMedicalRecords(filteredRecords, 'doctor-records-list');
+        };
+
+        // --- 9. Lógica de Notificaciones ---
+
+        /** Añade una notificación al usuario especificado. */
+        const addNotification = (userId, message) => {
+            if (!userId) return;
+            const notifications = loadData(SC_NOTIFICATIONS);
+            let userNotifs = notifications.find(n => n.userId === userId);
+            
+            if (!userNotifs) {
+                userNotifs = { userId, list: [] };
+                notifications.push(userNotifs);
+            }
+            
+            userNotifs.list.unshift({
+                id: 'notif-' + generateId(), 
+                message: message, 
+                timestamp: new Date().toLocaleString('es-ES'), 
+                read: false 
+            });
+
+            userNotifs.list = userNotifs.list.slice(0, 10); // Limitar a 10 notificaciones
+
+            saveData(SC_NOTIFICATIONS, notifications);
+            if (!isDoctor && currentUser && currentUser.id === userId) {
+                updateNotificationCount();
+            }
+        };
+
+        /** Actualiza el contador de notificaciones no leídas para el paciente. */
+        const updateNotificationCount = () => {
+            const countElement = document.getElementById('notification-count');
+            if (isDoctor || !currentUser) {
+                countElement.textContent = '';
+                countElement.classList.add('opacity-0');
+                return;
+            }
+
+            const notifications = loadData(SC_NOTIFICATIONS);
+            const userNotifs = notifications.find(n => n.userId === currentUser.id);
+            const unreadCount = userNotifs ? userNotifs.list.filter(n => !n.read).length : 0;
+
+            countElement.textContent = unreadCount > 0 ? unreadCount : '';
+            countElement.classList.toggle('opacity-0', unreadCount === 0);
+        };
+
+        /** Muestra la pantalla de notificaciones del paciente. */
+        const showNotifications = () => {
+            if (isDoctor || !currentUser) return;
+
+            const notifications = loadData(SC_NOTIFICATIONS);
+            const userNotifs = notifications.find(n => n.userId === currentUser.id);
+            const listElement = document.getElementById('notifications-list');
+            
+            if (userNotifs && userNotifs.list.length > 0) {
+                listElement.innerHTML = userNotifs.list.map(n => `
+                    <div class="p-4 rounded-xl shadow-sm mb-3 border ${n.read ? 'bg-secondary-gray text-gray-600 border-gray-200' : 'bg-primary-blue/10 text-gray-800 border-primary-blue/20'}">
+                        <p class="font-medium">${n.message}</p>
+                        <p class="text-xs mt-1 ${n.read ? 'text-gray-500' : 'text-primary-blue'}">${n.timestamp}</p>
+                    </div>
+                `).join('');
+
+                // Marcar todas como leídas al verlas
+                userNotifs.list.forEach(n => n.read = true);
+                saveData(SC_NOTIFICATIONS, notifications);
+                updateNotificationCount();
+            } else {
+                listElement.innerHTML = '<p class="text-center text-gray-500 italic mt-8">No hay notificaciones recientes.</p>';
+            }
+
+            showScreen('notifications-screen');
+        };
+
+        /** Limpia todas las notificaciones del paciente. */
+        const clearNotifications = () => {
+            if (isDoctor || !currentUser) return;
+            
+            const notifications = loadData(SC_NOTIFICATIONS);
+            const notifIndex = notifications.findIndex(n => n.userId === currentUser.id);
+            
+            if (notifIndex > -1) {
+                notifications[notifIndex].list = [];
+                saveData(SC_NOTIFICATIONS, notifications);
+                showNotifications(); // Recargar la lista vacía
+            }
+        };
+
+        // --- 10. Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Inicia los usuarios de prueba
+            initializeUsers();
+            // 2. Carga los datos de prueba si es la primera vez
+            initializeMockData();
+            // 3. Muestra la pantalla de inicio del DOCTOR al cargar
+            showScreen('doctor-login-screen');
+        });
+    </script>
+</body>
+</html>
